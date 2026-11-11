@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Call of Cthulhu - VTT</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:ital,wght@0,300;0,400;0,700;1,400&family=Special+Elite&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- цвета --- */
+        :root {
+            --bg-dark: #1a1c18;
+            --bg-dark-green: #2E2910;
+            --paper: #EBE3A7;
+            --accent: #EB7D00;
+            --text-dark: #2C5745;
+            --text-light: #EBE3A7;
+            --border-color: #3a4239;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-dark);
+            font-family: 'Merriweather', serif;
+            color: var(--text-light);
+            overflow: hidden;
+        }
+
+        h1, h2, h3, h4, button, .font-typewriter {
+            font-family: 'Special Elite', monospace;
+            letter-spacing: 1px;
+        }
+
+        .screen { display: none; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; }
+        .screen.active { display: flex; }
+
+        /* --- экран авторизации --- */
+        #screen-auth {
+            justify-content: center; align-items: center;
+            background: radial-gradient(circle at center, #2C5745 0%, #1a1c18 100%);
+        }
+        .auth-box {
+            background: var(--bg-dark-green); padding: 40px;
+            border-radius: 4px; border: 2px solid var(--accent);
+            box-shadow: 0 0 30px rgba(235, 125, 0, 0.2), inset 0 0 20px rgba(0,0,0,0.8);
+            width: 320px; display: flex; flex-direction: column; gap: 20px;
+        }
+        .auth-box h2 { margin: 0; color: var(--paper); text-align: center; font-size: 24px; text-shadow: 0 0 10px rgba(235, 227, 167, 0.3); }
+        .auth-box input {
+            padding: 12px; border-radius: 2px; border: 1px solid #444;
+            background: #111; color: var(--paper); font-family: 'Merriweather', serif;
+            outline: none;
+        }
+        .auth-box input:focus { border-color: var(--accent); }
+        .auth-box button {
+            padding: 12px; border-radius: 2px; border: none; cursor: pointer;
+            font-weight: bold; color: #111; background: var(--accent);
+            text-transform: uppercase; transition: 0.3s;
+        }
+        .auth-box button:hover { background: #ff9a2e; box-shadow: 0 0 15px rgba(235, 125, 0, 0.5); }
+        .auth-box .toggle-btn { background: transparent; color: var(--paper); text-decoration: underline; text-transform: none; font-family: 'Merriweather', serif; font-size: 14px; }
+        #auth-error { color: #d94c4c; text-align: center; font-size: 14px; min-height: 16px; font-family: 'Special Elite', monospace;}
+
+        /* --- экран лобби --- */
+        #screen-lobby {
+            flex-direction: column; padding: 40px; box-sizing: border-box;
+            background: var(--bg-dark); overflow-y: auto;
+        }
+        .lobby-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; border-bottom: 2px dashed #444; padding-bottom: 15px; }
+        .lobby-header h2 { color: var(--accent); margin: 0; }
+        .lobby-content { display: flex; gap: 30px; width: 100%; max-width: 1300px; margin: 0 auto; align-items: flex-start; }
+
+        .panel {
+            background: #22251e; padding: 25px; border-radius: 4px;
+            border: 1px solid #3a4239; flex: 1; box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        .panel h3 { margin-top: 0; color: var(--paper); border-bottom: 1px solid #444; padding-bottom: 10px; }
+
+        /* Карточки персонажей */
+        .profile-card {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            background: var(--bg-dark-green); padding: 15px; border-radius: 4px;
+            border: 2px solid #444; cursor: pointer; position: relative; width: 140px;
+            transition: 0.3s;
+        }
+        .profile-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .avatar-display {
+            width: 80px; height: 80px; border-radius: 50%; background: #111;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 36px; background-size: cover; background-position: center;
+            border: 2px solid #444;
+        }
+        .profile-name { font-size: 16px; font-weight: bold; color: var(--accent); text-align: center; font-family: 'Special Elite', monospace; }
+
+        /* Кнопки в лобби */
+        .btn-primary {
+            padding: 12px 20px; background: var(--accent); color: #111;
+            border: none; border-radius: 2px; cursor: pointer;
+            font-weight: bold; font-size: 16px; text-transform: uppercase; transition: 0.3s;
+        }
+        .btn-primary:hover { background: #ff9a2e; box-shadow: 0 0 15px rgba(235, 125, 0, 0.4); }
+        .btn-secondary {
+            padding: 10px 15px; background: transparent; color: var(--accent);
+            border: 2px solid var(--accent); border-radius: 2px; cursor: pointer;
+            font-weight: bold; transition: 0.3s;
+        }
+        .btn-secondary:hover { background: var(--accent); color: #111; }
+
+        .coc-input {
+            width: 100%; padding: 10px; border-radius: 2px;
+            border: 1px solid #444; background: #111; color: var(--paper);
+            box-sizing: border-box; font-family: 'Merriweather', serif;
+        }
+        .coc-input:focus { border-color: var(--accent); outline: none; }
+
+        /* Список комнат */
+        .room-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #1a1c18; padding: 10px 15px; border-radius: 4px;
+            margin-bottom: 10px; border-left: 3px solid var(--accent);
+            font-family: 'Special Elite', monospace;
+        }
+
+        /* --- окно листа персонажа --- */
+        #character-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 1000; justify-content: center; align-items: center; }
+        #character-modal.active { display: flex; }
+
+        .modal-content {
+            background-color: var(--paper);
+            background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
+            width: 950px; max-width: 95vw; max-height: 95vh; overflow-y: auto;
+            padding: 40px; border-radius: 2px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), inset 0 0 50px rgba(100, 80, 40, 0.2);
+            color: var(--text-dark); position: relative; box-sizing: border-box;
+            border: 1px solid #c2b98a;
+        }
+        .close-modal { position: absolute; top: 15px; right: 20px; font-size: 28px; cursor: pointer; color: #8b4513; font-weight: bold; font-family: 'Special Elite', monospace; }
+        .close-modal:hover { color: #d94c4c; }
+
+        .coc-sheet { font-size: 15px; font-family: 'Merriweather', serif; }
+        .coc-sheet h3 { color: #8b4513; text-align: center; margin-top: 0; font-size: 26px; text-shadow: 1px 1px 0px rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 2px; }
+
+        .coc-row { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; }
+        .coc-input-sheet {
+            flex: 1; padding: 8px; border: none; border-bottom: 2px solid var(--text-dark);
+            background: transparent; color: var(--text-dark); font-family: 'Special Elite', monospace; font-size: 16px; outline: none;
+        }
+        .coc-input-sheet::placeholder { color: #8a9a8a; font-style: italic; }
+        .coc-input-sheet:focus { border-bottom-color: var(--accent); }
+
+        .avatar-section { display: flex; gap: 20px; margin-bottom: 20px; background: rgba(44, 87, 69, 0.05); padding: 15px; border-radius: 4px; border: 1px dashed var(--text-dark); }
+        .avatar-preview { width: 120px; height: 120px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 3px solid var(--text-dark); box-shadow: inset 0 0 10px rgba(0,0,0,0.3); }
+        .avatar-upload-btn { padding: 10px 15px; background: var(--text-dark); color: var(--paper); border: none; border-radius: 2px; cursor: pointer; font-family: 'Special Elite', monospace; font-size: 14px;}
+        .avatar-upload-btn:hover { background: var(--accent); color: #111; }
+
+        /* Сетка характеристик */
+        .coc-stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.4); border: 1px solid #b5aa7d;
+            border-radius: 4px; padding: 10px; text-align: center; position: relative;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+        }
+        .stat-box label { display: block; font-size: 12px; color: #8b4513; font-weight: bold; font-family: 'Special Elite', monospace; margin-bottom: 5px; }
+        .stat-box input { width: 100%; text-align: center; font-size: 24px; font-weight: bold; background: transparent; border: none; color: var(--text-dark); padding: 0; font-family: 'Special Elite', monospace; outline: none;}
+        .stat-box .sub { display: block; font-size: 11px; color: #6a7a5d; margin-top: 4px; font-family: 'Merriweather', serif; border-top: 1px solid #ccc; padding-top: 2px;}
+
+        /* Производные */
+        .coc-derived { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
+        .derived-item {
+            flex: 1; min-width: 130px; background: rgba(44, 87, 69, 0.1);
+            border: 1px solid #b5aa7d; border-radius: 4px; padding: 10px;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+        .derived-item span { font-size: 12px; color: #8b4513; font-weight: bold; font-family: 'Special Elite', monospace; }
+        .derived-item b { font-size: 20px; color: var(--text-dark); font-family: 'Special Elite', monospace; }
+        .derived-item input { width: 100%; padding: 4px; text-align: center; border-radius: 2px; border: 1px solid #999; background: rgba(255,255,255,0.5); color: var(--text-dark); font-weight: bold; font-family: 'Special Elite', monospace; }
+
+        /* Навыки  */
+        .skills-section { margin: 20px 0; background: rgba(255, 255, 255, 0.3); border-radius: 4px; padding: 15px; border: 1px solid #b5aa7d; }
+        .skills-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--text-dark); padding-bottom: 10px; }
+        .skills-header h4 { margin: 0; color: var(--text-dark); font-size: 18px; text-transform: uppercase; }
+        .skills-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 8px; max-height: 350px; overflow-y: auto; padding-right: 10px; }
+
+        .skills-list::-webkit-scrollbar { width: 8px; }
+        .skills-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+        .skills-list::-webkit-scrollbar-thumb { background: #b5aa7d; border-radius: 4px; }
+
+        .skill-item {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px dotted #999; padding: 4px 0;
+            font-family: 'Merriweather', serif;
+        }
+        .skill-info { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
+        .skill-name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+        .skill-base { font-size: 10px; color: #8a9a8a; font-style: italic; }
+
+        .skill-values { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+        .skill-item input {
+            width: 45px; text-align: right; background: transparent;
+            border: none; border-bottom: 1px solid var(--text-dark);
+            color: var(--text-dark); font-weight: bold;
+            font-family: 'Special Elite', monospace; outline: none; font-size: 14px;
+        }
+        .skill-item .sub-val { font-size: 10px; color: #6a7a5d; width: 45px; text-align: left; }
+        .skill-item .del-skill-btn { background: #d94c4c; color: white; border: none; border-radius: 2px; cursor: pointer; margin-left: 5px; padding: 2px 6px; font-size: 10px; }
+
+        .add-skill-controls { display: flex; gap: 5px; margin-top: 15px; }
+        .add-skill-controls input { flex: 1; padding: 8px; border: 1px solid #999; background: rgba(255,255,255,0.5); border-radius: 2px; font-family: inherit;}
+        .add-skill-controls button { padding: 8px 15px; background: var(--text-dark); color: var(--paper); border: none; border-radius: 2px; cursor: pointer; font-family: 'Special Elite', monospace; }
+
+        .coc-backstory { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+        .coc-backstory textarea {
+            background: transparent; border: 1px dashed #999; border-radius: 2px;
+            padding: 10px; color: var(--text-dark); resize: vertical; min-height: 80px;
+            font-size: 13px; font-family: 'Merriweather', serif; line-height: 1.5;
+        }
+        .coc-backstory textarea::placeholder { color: #8a9a8a; font-style: italic; }
+
+        .coc-save-btn {
+            width: 100%; padding: 15px; background: #8b4513; color: var(--paper);
+            border: none; border-radius: 2px; font-weight: bold; cursor: pointer;
+            font-size: 18px; margin-top: 15px; text-transform: uppercase;
+            font-family: 'Special Elite', monospace; letter-spacing: 2px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.3s;
+        }
+        .coc-save-btn:hover { background: #a0522d; }
+
+        /* --- экран игрового стола --- */
+        #game-board {
+            width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; cursor: grab;
+            background-color: var(--bg-dark-green);
+            background-image: linear-gradient(to right, rgba(235, 227, 167, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(235, 227, 167, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+        #game-board:active { cursor: grabbing; }
+        #map-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-size: contain; background-position: center; background-repeat: no-repeat; transform-origin: center center; pointer-events: none; z-index: 1; }
+        #drawing-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; cursor: crosshair; pointer-events: none; transform-origin: 0 0; }
+        #drawing-canvas.active { pointer-events: auto; }
+
+        #clue-board {
+            position: fixed; top: 0; left: 0; width: 280px; height: calc(100vh - 70px);
+            background: var(--paper); border-right: 4px solid #8b4513;
+            z-index: 25; overflow-y: auto; padding: 15px; box-sizing: border-box;
+            display: flex; flex-direction: column; gap: 15px; transition: transform 0.3s ease;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+        }
+        #clue-board.hidden { transform: translateX(-100%); }
+        #clue-board h3 { color: #8b4513; margin-top: 0; text-align: center; font-size: 18px; border-bottom: 2px dashed #8b4513; padding-bottom: 10px; }
+        .clue-item { width: 100%; background: #fff; border-radius: 2px; padding: 5px; box-sizing: border-box; color: var(--text-dark); font-size: 12px; box-shadow: 2px 4px 10px rgba(0,0,0,0.2); position: relative; transform: rotate(-1deg); }
+        .clue-item:nth-child(even) { transform: rotate(2deg); }
+        .clue-item img { width: 100%; border-radius: 1px; display: block; border: 1px solid #ddd; }
+
+        #chat-container {
+            position: fixed; bottom: 90px; right: 20px; width: 340px;
+            background: rgba(17, 17, 17, 0.95); padding: 15px; border-radius: 4px;
+            z-index: 20; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 1px solid #444; border-left: 4px solid var(--accent);
+        }
+        #chat-messages { height: 250px; overflow-y: auto; color: var(--paper); margin-bottom: 15px; font-size: 14px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        #chat-messages div { margin-bottom: 8px; word-wrap: break-word; line-height: 1.4; }
+        .chat-img { max-width: 100%; border-radius: 2px; cursor: grab; margin-top: 5px; border: 1px solid #555; }
+        .chat-img:active { cursor: grabbing; }
+        .chat-controls { display: flex; gap: 5px; }
+        #chat-input { flex-grow: 1; padding: 8px; border-radius: 2px; border: 1px solid #444; background: #222; color: var(--paper); outline: none; font-family: inherit;}
+        #chat-input:focus { border-color: var(--accent); }
+        #chat-send { padding: 8px 15px; background: var(--accent); color: #111; border: none; border-radius: 2px; cursor: pointer; font-weight: bold; }
+        #attach-btn { padding: 8px 12px; background: #444; color: var(--paper); border: none; border-radius: 2px; cursor: pointer; font-size: 16px; }
+
+        #toolbar {
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: rgba(34, 37, 30, 0.95); border-top: 3px solid var(--accent);
+            display: flex; align-items: center; padding: 0 20px; gap: 15px;
+            z-index: 30; box-sizing: border-box; box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+        }
+        .toolbar-btn {
+            padding: 10px 15px; background: transparent; color: var(--paper);
+            border: 1px solid #555; border-radius: 2px; cursor: pointer;
+            font-weight: bold; font-family: 'Special Elite', monospace; transition: 0.3s;
+        }
+        .toolbar-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        .token-wrapper { position: absolute; display: flex; flex-direction: column; align-items: center; cursor: grab; z-index: 5; user-select: none; transform-origin: center top; }
+        .token-wrapper:active { cursor: grabbing; }
+        .token-circle {
+            width: 60px; height: 60px; background-color: #d94c4c;
+            border: 3px solid #8b4513; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            color: white; font-weight: bold; font-size: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.6); background-size: cover; background-position: center;
+            transform-origin: center center; transition: transform 0.1s ease;
+        }
+        .token-name {
+            position: absolute; bottom: -28px; background: #111; color: var(--accent);
+            padding: 3px 8px; border-radius: 2px; font-size: 12px;
+            white-space: nowrap; pointer-events: none; z-index: 10;
+            font-family: 'Special Elite', monospace; border: 1px solid #333;
+        }
+
+        #dice-modal {
+            display: none; position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-dark-green); padding: 20px; border-radius: 4px;
+            border: 2px solid var(--accent); z-index: 40; flex-direction: column; gap: 15px;
+            color: var(--paper); box-shadow: 0 0 30px rgba(235, 125, 0, 0.2);
+        }
+        #dice-modal.active { display: flex; }
+        .dice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        .dice-btn {
+            padding: 12px; background: #222; color: var(--paper); border: 1px solid #444;
+            border-radius: 2px; cursor: pointer; font-weight: bold; text-align: center;
+            font-family: 'Special Elite', monospace; font-size: 16px; transition: 0.2s;
+        }
+        .dice-btn:hover { border-color: var(--accent); }
+        .dice-btn.selected { background: var(--accent); color: #111; border-color: var(--accent); }
+        .dice-controls { display: flex; justify-content: space-between; margin-top: 10px; }
+
+        #token-editor {
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--bg-dark-green); color: var(--paper); padding: 25px;
+            border-radius: 4px; border: 1px solid var(--accent); z-index: 100;
+            flex-direction: column; gap: 15px; width: 320px; box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+        }
+        #token-editor.active { display: flex; }
+        #token-editor h3 { color: var(--accent); margin-top: 0; text-align: center; border-bottom: 1px dashed #444; padding-bottom: 10px; }
+        #token-editor label { font-size: 14px; }
+        #token-editor input[type="text"], #token-editor input[type="color"], #token-editor input[type="range"] { width: 100%; padding: 8px; margin-top: 5px; border-radius: 2px; border: 1px solid #444; background: #111; color: var(--paper); box-sizing: border-box; font-family: inherit;}
+        .editor-btn { padding: 12px; background: var(--accent); color: #111; border: none; border-radius: 2px; cursor: pointer; font-weight: bold; text-align: center; font-family: 'Special Elite', monospace; transition: 0.3s;}
+        .editor-btn:hover { background: #ff9a2e; }
+        .editor-btn.delete { background: #d94c4c; color: white; }
+        .editor-btn.delete:hover { background: #c0392b; }
+
+        /* Стили для обрезки аватара */
+        #crop-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+        .crop-container { background: var(--paper); padding: 30px; border-radius: 4px; display: flex; flex-direction: column; align-items: center; box-shadow: 0 0 50px rgba(235, 125, 0, 0.2); }
+        .crop-container h3 { color: #8b4513; margin-top: 0; }
+        .crop-image-wrapper { width: 400px; height: 400px; background: #111; margin-bottom: 20px; border: 2px solid #8b4513; }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #444; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <!-- авторизация -->
+    <div id="screen-auth" class="screen active">
+        <div class="auth-box">
+            <h2>Вход в Архивы</h2>
+            <input type="text" id="auth-username" placeholder="Имя следователя">
+            <input type="password" id="auth-password" placeholder="Секретный код">
+            <button id="login-btn">Войти</button>
+            <button id="register-btn" class="toggle-btn">Нет допуска? Запросить</button>
+            <div id="auth-error"></div>
+        </div>
+    </div>
+
+    <!-- лобби -->
+    <div id="screen-lobby" class="screen">
+        <div class="lobby-header">
+            <h2>Стол следователя: <span id="lobby-username">...</span></h2>
+            <button onclick="logout()" class="btn-secondary" style="border-color: #d94c4c; color: #d94c4c;">Закрыть дело</button>
+        </div>
+        <div class="lobby-content">
+            <div class="panel" style="flex: 2;">
+                <h3>👤 Досье следователей</h3>
+                <div id="characters-list" style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 20px;"></div>
+                <button onclick="createNewCharacter()" class="btn-primary">➕ Завести новое досье</button>
+            </div>
+
+            <div class="panel">
+                <h3>🗝️ Комнаты расследований</h3>
+                <div style="margin-bottom: 20px;">
+                    <h4 style="margin: 5px 0 10px 0; color: var(--paper); font-size: 14px;">Создать комнату</h4>
+                    <input type="text" id="new-room-name" placeholder="Название дела" class="coc-input" style="margin-bottom: 10px;">
+                    <button onclick="createRoom()" class="btn-primary" style="width: 100%;">Создать код доступа</button>
+                </div>
+
+                <div style="margin-bottom: 20px; border-top: 1px solid #444; padding-top: 15px;">
+                    <h4 style="margin: 5px 0 10px 0; color: var(--paper); font-size: 14px;">Присоединиться</h4>
+                    <input type="text" id="join-room-code" placeholder="6-значный код" class="coc-input" style="margin-bottom: 10px;">
+                    <button onclick="joinRoom()" class="btn-primary" style="width: 100%; background: transparent; border: 2px solid var(--accent); color: var(--accent);">Войти в комнату</button>
+                </div>
+
+                <div id="my-rooms-list">
+                    <p style="font-size: 12px; color: #888; font-family: 'Special Elite', monospace;">Активные дела:</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- лист персонажа -->
+    <div id="character-modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeCharacterModal()">✖</span>
+            <div class="coc-sheet">
+                <h3>Досье Следователя</h3>
+
+                <div class="avatar-section">
+                    <div class="avatar-preview" id="modal-avatar-preview"></div>
+                    <div style="display: flex; flex-direction: column; justify-content: center;">
+                        <button class="avatar-upload-btn" onclick="document.getElementById('avatar-file-input').click()">📷 Прикрепить фото</button>
+                        <input type="file" id="avatar-file-input" accept="image/*" style="display: none;" onchange="uploadAvatar(this)">
+                        <small style="color: #6a7a5d; margin-top: 5px; font-style: italic;">Формат: квадрат 1:1</small>
+                    </div>
+                </div>
+
+                <div class="coc-row">
+                    <input type="text" id="char-name" placeholder="Имя" class="coc-input-sheet" style="flex: 2;">
+                    <div style="position: relative; display: flex; align-items: center; width: 120px;">
+                        <input type="number" id="char-age" placeholder="Возраст" value="30" class="coc-input-sheet" style="width: 100%;">
+                        <span style="position: absolute; right: 0; color: #6a7a5d; font-size: 10px; pointer-events: none; font-style: italic;">лет</span>
+                    </div>
+                </div>
+                <div class="coc-row">
+                    <input type="text" id="char-occupation" placeholder="Профессия" class="coc-input-sheet">
+                    <input type="text" id="char-birthplace" placeholder="Место рождения" class="coc-input-sheet">
+                </div>
+
+                <div class="coc-stats-grid">
+                    <div class="stat-box"><label>СИЛ</label><input type="number" id="str" value="50" oninput="calcCoC()"><span class="sub" id="str-sub">25/10</span></div>
+                    <div class="stat-box"><label>ВЫН</label><input type="number" id="con" value="50" oninput="calcCoC()"><span class="sub" id="con-sub">25/10</span></div>
+                    <div class="stat-box"><label>МОЩ</label><input type="number" id="pow" value="50" oninput="calcCoC()"><span class="sub" id="pow-sub">25/10</span></div>
+                    <div class="stat-box"><label>ЛВК</label><input type="number" id="dex" value="50" oninput="calcCoC()"><span class="sub" id="dex-sub">25/10</span></div>
+                    <div class="stat-box"><label>НАР</label><input type="number" id="app" value="50" oninput="calcCoC()"><span class="sub" id="app-sub">25/10</span></div>
+                    <div class="stat-box"><label>ТЕЛ</label><input type="number" id="siz" value="50" oninput="calcCoC()"><span class="sub" id="siz-sub">25/10</span></div>
+                    <div class="stat-box"><label>ИНТ</label><input type="number" id="int" value="50" oninput="calcCoC()"><span class="sub" id="int-sub">25/10</span></div>
+                    <div class="stat-box"><label>ОБР</label><input type="number" id="edu" value="50" oninput="calcCoC()"><span class="sub" id="edu-sub">25/10</span></div>
+                </div>
+
+                <div class="coc-derived">
+                    <div class="derived-item"><span>Пункты Здоровья (ПЗ)</span><b id="hp-max">10</b><input type="number" id="hp-current" value="10"></div>
+                    <div class="derived-item"><span>Рассудок</span><b id="san-max">50</b><input type="number" id="san-current" value="50"></div>
+                    <div class="derived-item"><span>Пункты Магии (ПМ)</span><b id="mp-max">10</b><input type="number" id="mp-current" value="10"></div>
+                    <div class="derived-item"><span>Удача</span><input type="number" id="luck" value="50"></div>
+                </div>
+
+                <div class="skills-section">
+                    <div class="skills-header">
+                        <h4>Навыки и умения</h4>
+                        <button onclick="addCustomSkillField()" style="padding: 5px 10px; background: var(--text-dark); color: var(--paper); border: none; border-radius: 2px; cursor: pointer; font-family: 'Special Elite', monospace;">+ Свой навык</button>
+                    </div>
+                    <div id="skills-container" class="skills-list"></div>
+                    <div id="custom-skills-list" class="skills-list" style="margin-top: 5px;"></div>
+
+                    <div class="add-skill-controls" id="add-skill-controls" style="display: none;">
+                        <input type="text" id="new-skill-name" placeholder="Название навыка">
+                        <button onclick="saveNewSkill()">Доб.</button>
+                    </div>
+                </div>
+
+                <div class="coc-backstory">
+                    <textarea id="ideology" placeholder="Идеология/убеждения"></textarea>
+                    <textarea id="significant_people" placeholder="Значимые люди"></textarea>
+                    <textarea id="meaningful_locations" placeholder="Значимые места"></textarea>
+                    <textarea id="treasured_possessions" placeholder="Ценные вещи"></textarea>
+                    <textarea id="traits" placeholder="Черты характера"></textarea>
+                    <textarea id="phobias" placeholder="Фобии/мании"></textarea>
+                    <textarea id="mythos" placeholder="Мифы Ктулху"></textarea>
+                </div>
+
+                <button onclick="saveCharacterCoC()" class="coc-save-btn">Заверить досье</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- окно обрезки аватара -->
+    <div id="crop-modal">
+        <div class="crop-container">
+            <h3>Обработка фотографии</h3>
+            <div class="crop-image-wrapper">
+                <img id="image-to-crop" style="max-width: 100%; display: block;">
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <button onclick="applyCrop()" class="btn-primary">Применить</button>
+                <button onclick="closeCropModal()" class="btn-secondary" style="border-color: #d94c4c; color: #d94c4c;">Отмена</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- игровой стол -->
+    <div id="screen-game" class="screen">
+        <input type="file" id="map-upload" accept="image/*" style="display: none;">
+        <input type="file" id="chat-file-upload" accept="image/*" style="display: none;">
+        <input type="file" id="token-image-upload" accept="image/*" style="display: none;">
+
+        <div id="clue-board"><h3>📌 Улики</h3></div>
+        <div id="game-board"><div id="map-container"></div><canvas id="drawing-canvas"></canvas></div>
+        <div id="chat-container">
+            <div id="chat-messages"></div>
+            <div class="chat-controls">
+                <button id="attach-btn">📎</button>
+                <input type="text" id="chat-input" placeholder="Запись в блокнот...">
+                <button id="chat-send">➤</button>
+            </div>
+        </div>
+
+        <div id="toolbar">
+            <button class="toolbar-btn" id="leave-room-btn" style="color: #d94c4c; border-color: #d94c4c;">🚪 Выйти</button>
+            <button class="toolbar-btn" id="toggle-clue-board">📌 Улики</button>
+            <button class="toolbar-btn" onclick="document.getElementById('map-upload').click()">Карта</button>
+            <button class="toolbar-btn" id="add-token-btn">Токен</button>
+            <div style="display: flex; gap: 5px; align-items: center; border-left: 1px solid #444; padding-left: 15px; margin-left: 10px;">
+                <button class="toolbar-btn" id="draw-toggle" style="color: var(--accent); border-color: var(--accent);">✏️ Рисовать</button>
+                <input type="color" id="draw-color" value="#ff0000" style="width: 35px; height: 35px; border: 1px solid #444; cursor: pointer; border-radius: 2px; background: #111;">
+                <button class="toolbar-btn" id="clear-canvas">🗑️ Очистить</button>
+            </div>
+            <div style="margin-left: 20px; display: flex; gap: 5px; align-items: center;">
+                <span style="color:var(--paper); font-family: 'Special Elite', monospace; font-size: 12px;">МАСШТАБ:</span>
+                <button class="toolbar-btn" onclick="changeMapScale(-0.1)">-</button>
+                <button class="toolbar-btn" onclick="changeMapScale(0.1)">+</button>
+            </div>
+            <button class="toolbar-btn" id="dice-toggle-btn" style="margin-left: auto; background: var(--accent); color: #111; border-color: var(--accent);">🎲 КУБИКИ</button>
+        </div>
+
+        <div id="dice-modal">
+            <div style="text-align:center; font-weight:bold; font-family: 'Special Elite', monospace; color: var(--accent); font-size: 18px;">Бросок кубиков</div>
+            <div class="dice-grid">
+                <div class="dice-btn" data-sides="4">d4</div><div class="dice-btn" data-sides="6">d6</div><div class="dice-btn" data-sides="8">d8</div><div class="dice-btn" data-sides="10">d10</div><div class="dice-btn" data-sides="12">d12</div><div class="dice-btn" data-sides="20">d20</div><div class="dice-btn" data-sides="100">d100</div>
+            </div>
+            <div class="dice-controls">
+                <button id="clear-dice-btn" class="btn-secondary" style="border-color: #d94c4c; color: #d94c4c;">Сброс</button>
+                <button id="roll-btn" class="btn-primary">Бросить (0)</button>
+            </div>
+        </div>
+
+        <div id="token-editor">
+            <h3>Свойства фигуры</h3>
+            <div><label>Имя:</label><input type="text" id="edit-name"></div>
+            <div><label>Цвет:</label><input type="color" id="edit-color"></div>
+            <div><label>Размер: <span id="scale-val">1</span>x</label><input type="range" id="edit-scale" min="0.5" max="3" step="0.1" value="1"></div>
+            <button class="editor-btn" onclick="document.getElementById('token-image-upload').click()">Загрузить фото</button>
+            <button class="editor-btn delete" id="delete-token-btn">Удалить</button>
+            <button class="editor-btn" style="background:transparent; border: 1px solid #555; color: var(--paper);" onclick="closeEditor()">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem("vtt_token");
+        let currentUsername = localStorage.getItem("vtt_username");
+        let ws = null;
+        let isGameInitialized = false;
+        let currentAvatarUrl = "";
+        let cropper = null;
+        let customSkills = {};
+        let currentEditingCharId = null;
+        let currentRoomId = null;
+
+        const COC_SKILLS = {
+            "Бухгалтерия": 5, "Антропология": 1, "Археология": 1, "Обаяние": 15,
+            "Лазание": 20, "Кредитный рейтинг": 0, "Криптография": 1, "Вождение": 20,
+            "Электроника": 10, "Убеждение": 10, "Красноречие": 5, "Драка": 25,
+            "Стрельба (пистолет)": 20, "Стрельба (винтовка)": 25, "Первая помощь": 30,
+            "История": 5, "Запугивание": 15, "Прыжок": 20, "Язык (свой)": 0,
+            "Язык (другой)": 1, "Право": 5, "Использование библиотеки": 20,
+            "Слух": 20, "Взлом": 1, "Механика": 10, "Медицина": 1,
+            "Естествознание": 10, "Навигация": 10, "Оккультизм": 5,
+            "Тяжёлая техника": 1, "Пилотирование": 1, "Психология": 10,
+            "Психоанализ": 1, "Верховая езда": 5, "Наука": 1,
+            "Ловкость рук": 10, "Скрытность": 20, "Выживание": 10,
+            "Плавание": 20, "Слежка": 10, "Мифы Ктулху": 0
+        };
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const user = document.getElementById('auth-username').value;
+            const pass = document.getElementById('auth-password').value;
+            const formData = new URLSearchParams();
+            formData.append('username', user); formData.append('password', pass);
+            const res = await fetch('/token', { method: 'POST', body: formData });
+            if (res.ok) {
+                const data = await res.json();
+                authToken = data.access_token; currentUsername = user;
+                localStorage.setItem("vtt_token", authToken); localStorage.setItem("vtt_username", currentUsername);
+                loadLobby();
+            } else { document.getElementById('auth-error').textContent = "Доступ запрещён. Проверьте данные."; }
+        });
+
+        document.getElementById('register-btn').addEventListener('click', async () => {
+            const user = document.getElementById('auth-username').value;
+            const pass = document.getElementById('auth-password').value;
+            const res = await fetch(`/register?username=${user}&password=${pass}`, { method: 'POST' });
+            if (res.ok) alert("Допуск получен. Войдите в систему.");
+            else document.getElementById('auth-error').textContent = "Ошибка. Возможно, имя занято.";
+        });
+
+        function logout() {
+            localStorage.removeItem("vtt_token"); localStorage.removeItem("vtt_username");
+            authToken = null; if (ws) { ws.close(); ws = null; }
+            showScreen('screen-auth');
+        }
+
+        function calcCoC() {
+            const stats = ['str','con','pow','dex','app','siz','int','edu'];
+            const vals = {};
+            stats.forEach(id => {
+                const v = parseInt(document.getElementById(id)?.value) || 0;
+                vals[id] = v;
+                const sub = document.getElementById(id + '-sub');
+                if (sub) sub.textContent = `${Math.floor(v/2)}/${Math.floor(v/5)}`;
+            });
+            const hpMax = Math.floor((vals.con + vals.siz) / 10);
+            const sanMax = vals.pow;
+            const mpMax = Math.floor(vals.pow / 5);
+            if (document.getElementById('hp-max')) document.getElementById('hp-max').textContent = hpMax;
+            if (document.getElementById('san-max')) document.getElementById('san-max').textContent = sanMax;
+            if (document.getElementById('mp-max')) document.getElementById('mp-max').textContent = mpMax;
+        }
+
+        function renderSkills(skillsData) {
+            const container = document.getElementById('skills-container');
+            const customContainer = document.getElementById('custom-skills-list');
+            if (!container || !customContainer) return;
+            container.innerHTML = '';
+            customContainer.innerHTML = '';
+            customSkills = {};
+
+            for (const [name, base] of Object.entries(COC_SKILLS)) {
+                const val = skillsData[name] !== undefined ? skillsData[name] : base;
+                createSkillDOM(container, name, base, val, false);
+            }
+
+            for (const [name, val] of Object.entries(skillsData)) {
+                if (!COC_SKILLS[name]) {
+                    customSkills[name] = val;
+                    createSkillDOM(customContainer, name, 0, val, true);
+                }
+            }
+            calcAllSkills();
+        }
+
+        function createSkillDOM(container, name, baseVal, currentVal, isCustom) {
+            const div = document.createElement('div');
+            div.className = 'skill-item';
+
+            const baseText = isCustom ? "" : `<span class="skill-base">База: ${baseVal}</span>`;
+            const delBtn = isCustom ? `<button class="del-skill-btn" onclick="removeCustomSkill('${name}')">✖</button>` : '';
+
+            div.innerHTML = `
+                <div class="skill-info">
+                    <span class="skill-name" title="${name}">${name}</span>
+                    ${baseText}
+                </div>
+                <div class="skill-values">
+                    <input type="number" id="${isCustom ? 'custom-skill-' : 'skill-'}${name}" value="${currentVal}" oninput="updateSkillSub('${isCustom ? 'custom-skill-' : 'skill-'}${name}')">
+                    <span class="sub-val" id="sub-${isCustom ? 'custom-skill-' : 'skill-'}${name}">${Math.floor(currentVal/2)}/${Math.floor(currentVal/5)}</span>
+                    ${delBtn}
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function updateSkillSub(id) {
+            const el = document.getElementById(id);
+            const sub = document.getElementById('sub-' + id);
+            if (el && sub) {
+                const val = parseInt(el.value) || 0;
+                sub.textContent = `${Math.floor(val/2)}/${Math.floor(val/5)}`;
+            }
+        }
+
+        function calcAllSkills() {
+            document.querySelectorAll('input[id^="skill-"], input[id^="custom-skill-"]').forEach(el => {
+                updateSkillSub(el.id);
+            });
+        }
+
+        function addCustomSkillField() {
+            document.getElementById('add-skill-controls').style.display = 'flex';
+            document.getElementById('new-skill-name').focus();
+        }
+
+        function saveNewSkill() {
+            const name = document.getElementById('new-skill-name').value.trim();
+            if (name && !COC_SKILLS[name] && !customSkills[name]) {
+                customSkills[name] = 0;
+                const customContainer = document.getElementById('custom-skills-list');
+                createSkillDOM(customContainer, name, 0, 0, true);
+                document.getElementById('new-skill-name').value = '';
+                document.getElementById('add-skill-controls').style.display = 'none';
+            } else { alert("Навык уже существует или имя пустое."); }
+        }
+
+        function removeCustomSkill(name) {
+            delete customSkills[name];
+            const el = document.getElementById(`custom-skill-${name}`)?.parentElement?.parentElement;
+            if (el) el.remove();
+        }
+
+        async function loadLobby() {
+            showScreen('screen-lobby');
+            document.getElementById('lobby-username').textContent = currentUsername;
+            loadMyRooms();
+
+            const res = await fetch('/api/characters', { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.ok) {
+                const chars = await res.json();
+                const container = document.getElementById('characters-list');
+                container.innerHTML = '';
+
+                if (chars.length === 0) {
+                    container.innerHTML = '<p style="color: #888; width: 100%; font-style: italic;">Досье не найдены.</p>';
+                } else {
+                    chars.forEach(char => {
+                        const card = document.createElement('div');
+                        card.className = 'profile-card';
+                        card.onclick = () => openCharacterModal(char.id);
+
+                        let avatarStyle = char.avatar_url ? `background-image: url(${char.avatar_url});` : 'background: #111;';
+                        let avatarContent = char.avatar_url ? '' : '👤';
+
+                        card.innerHTML = `
+                            <div class="avatar-display" style="${avatarStyle}">${avatarContent}</div>
+                            <div class="profile-name">${char.name}</div>
+                            <div style="font-size: 12px; color: #888; font-style: italic; text-align: center;">${char.occupation || 'Без профессии'}</div>
+                            <button onclick="deleteCharacter(event, ${char.id})" style="position: absolute; top: -10px; right: -10px; background: #d94c4c; color: white; border: 1px solid #8b4513; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; justify-content: center; align-items: center;">✖</button>
+                        `;
+                        container.appendChild(card);
+                    });
+                }
+            }
+        }
+
+        async function loadMyRooms() {
+            const res = await fetch('/api/rooms/my', { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.ok) {
+                const rooms = await res.json();
+                const container = document.getElementById('my-rooms-list');
+                container.innerHTML = '<p style="font-size: 12px; color: #888; font-family: "Special Elite", monospace;">Активные дела:</p>';
+
+                if (rooms.length === 0) {
+                    container.innerHTML += '<p style="font-size: 12px; color: #555; font-style: italic;">Пусто</p>';
+                } else {
+                    rooms.forEach(r => {
+                        const div = document.createElement('div');
+                        div.className = 'room-item';
+                        div.innerHTML = `
+                            <span><b>${r.name}</b> <small style="color: var(--accent);">(${r.id})</small></span>
+                            <div style="display:flex; gap:5px;">
+                                <button onclick="enterGame(${r.id})" style="padding: 4px 10px; background: var(--accent); color: #111; border: none; border-radius: 2px; cursor: pointer; font-size: 12px; font-family: 'Special Elite', monospace;">Войти</button>
+                                <button onclick="deleteRoom(${r.id})" style="padding: 4px 8px; background: transparent; color: #d94c4c; border: 1px solid #d94c4c; border-radius: 2px; cursor: pointer; font-size: 12px;">✖</button>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            }
+        }
+
+        async function createRoom() {
+            const name = document.getElementById('new-room-name').value.trim();
+            if (!name) return alert("Введите название комнаты");
+
+            const res = await fetch('/api/rooms', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(`Комната создана! Код для входа: ${data.room_id}`);
+                document.getElementById('new-room-name').value = '';
+                loadMyRooms();
+            } else alert("Ошибка создания комнаты");
+        }
+
+        async function deleteRoom(id) {
+            if (confirm(`Удалить комнату ${id}?`)) {
+                const res = await fetch(`/api/rooms/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) loadMyRooms();
+            }
+        }
+
+        async function joinRoom() {
+            const code = document.getElementById('join-room-code').value.trim();
+            if (!code) return alert("Введите код комнаты");
+
+            const res = await fetch(`/api/rooms/check/${code}`);
+            if (res.ok) {
+                enterGame(parseInt(code));
+            } else {
+                alert("Комната с таким кодом не найдена");
+            }
+        }
+
+        async function deleteCharacter(e, id) {
+            e.stopPropagation();
+            if (confirm("Уничтожить это досье?")) {
+                const res = await fetch(`/api/characters/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${authToken}` } });
+                if (res.ok) loadLobby();
+            }
+        }
+
+        async function createNewCharacter() {
+            const res = await fetch('/api/characters', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: "Новый следователь" })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                loadLobby();
+                setTimeout(() => openCharacterModal(data.id), 300);
+            }
+        }
+
+        async function openCharacterModal(charId) {
+            currentEditingCharId = charId;
+            const res = await fetch(`/api/characters/${charId}`, { headers: { 'Authorization': `Bearer ${authToken}` } });
+            if (res.ok) {
+                const char = await res.json();
+                fillCharacterModal(char);
+                document.getElementById('character-modal').classList.add('active');
+            }
+        }
+
+        function fillCharacterModal(char) {
+            document.getElementById('char-name').value = char.name || "";
+            document.getElementById('char-age').value = char.age || 30;
+            document.getElementById('char-occupation').value = char.occupation || "";
+            document.getElementById('char-birthplace').value = char.birthplace || "";
+
+            currentAvatarUrl = char.avatar_url || "";
+            const modalAvatar = document.getElementById('modal-avatar-preview');
+            if (currentAvatarUrl) {
+                modalAvatar.style.backgroundImage = `url(${currentAvatarUrl})`;
+            } else {
+                modalAvatar.style.backgroundImage = 'none';
+            }
+
+            document.getElementById('str').value = char.str_val;
+            document.getElementById('con').value = char.con_val;
+            document.getElementById('pow').value = char.pow_val;
+            document.getElementById('dex').value = char.dex_val;
+            document.getElementById('app').value = char.app_val;
+            document.getElementById('siz').value = char.siz_val;
+            document.getElementById('int').value = char.int_val;
+            document.getElementById('edu').value = char.edu_val;
+
+            document.getElementById('hp-current').value = char.hp_current;
+            document.getElementById('san-current').value = char.sanity_current;
+            document.getElementById('mp-current').value = char.mp_current;
+            document.getElementById('luck').value = char.luck;
+
+            document.getElementById('ideology').value = char.ideology || "";
+            document.getElementById('significant_people').value = char.significant_people || "";
+            document.getElementById('meaningful_locations').value = char.meaningful_locations || "";
+            document.getElementById('treasured_possessions').value = char.treasured_possessions || "";
+            document.getElementById('traits').value = char.traits || "";
+            document.getElementById('phobias').value = char.phobias || "";
+            document.getElementById('mythos').value = char.mythos || "";
+
+            renderSkills(char.skills || {});
+            calcCoC();
+        }
+
+        function uploadAvatar(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgElement = document.getElementById('image-to-crop');
+                    imgElement.src = e.target.result;
+                    document.getElementById('crop-modal').style.display = 'flex';
+                    if (cropper) cropper.destroy();
+                    cropper = new Cropper(imgElement, {
+                        aspectRatio: 1, viewMode: 1, background: false, autoCropArea: 1
+                    });
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+            input.value = '';
+        }
+
+        function closeCropModal() {
+            document.getElementById('crop-modal').style.display = 'none';
+            if (cropper) { cropper.destroy(); cropper = null; }
+        }
+
+        async function applyCrop() {
+            if (!cropper) return;
+            const croppedCanvas = cropper.getCroppedCanvas({ width: 256, height: 256 });
+            croppedCanvas.toBlob(async (blob) => {
+                const formData = new FormData();
+                formData.append("file", blob, "avatar.jpg");
+                try {
+                    const res = await fetch('/upload', { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (data.url) {
+                        currentAvatarUrl = data.url;
+                        document.getElementById('modal-avatar-preview').style.backgroundImage = `url(${currentAvatarUrl})`;
+                        closeCropModal();
+                    }
+                } catch (e) { console.error(e); alert("Ошибка загрузки аватара"); }
+            }, 'image/jpeg', 0.9);
+        }
+
+        function closeCharacterModal() {
+            document.getElementById('character-modal').classList.remove('active');
+            currentEditingCharId = null;
+        }
+
+        async function saveCharacterCoC() {
+            if (!currentEditingCharId) return;
+
+            const skills = {};
+            for (const name of Object.keys(COC_SKILLS)) {
+                const el = document.getElementById(`skill-${name}`);
+                if (el) skills[name] = parseInt(el.value) || 0;
+            }
+            for (const name of Object.keys(customSkills)) {
+                const el = document.getElementById(`custom-skill-${name}`);
+                if (el) skills[name] = parseInt(el.value) || 0;
+            }
+
+            const charData = {
+                name: document.getElementById('char-name').value,
+                age: parseInt(document.getElementById('char-age').value) || 30,
+                occupation: document.getElementById('char-occupation').value,
+                birthplace: document.getElementById('char-birthplace').value,
+                avatar_url: currentAvatarUrl,
+                str_val: parseInt(document.getElementById('str').value) || 50,
+                con_val: parseInt(document.getElementById('con').value) || 50,
+                pow_val: parseInt(document.getElementById('pow').value) || 50,
+                dex_val: parseInt(document.getElementById('dex').value) || 50,
+                app_val: parseInt(document.getElementById('app').value) || 50,
+                siz_val: parseInt(document.getElementById('siz').value) || 50,
+                int_val: parseInt(document.getElementById('int').value) || 50,
+                edu_val: parseInt(document.getElementById('edu').value) || 50,
+                hp_current: parseInt(document.getElementById('hp-current').value) || 10,
+                sanity_current: parseInt(document.getElementById('san-current').value) || 50,
+                mp_current: parseInt(document.getElementById('mp-current').value) || 10,
+                luck: parseInt(document.getElementById('luck').value) || 50,
+                skills: skills,
+                ideology: document.getElementById('ideology').value,
+                significant_people: document.getElementById('significant_people').value,
+                meaningful_locations: document.getElementById('meaningful_locations').value,
+                treasured_possessions: document.getElementById('treasured_possessions').value,
+                traits: document.getElementById('traits').value,
+                phobias: document.getElementById('phobias').value,
+                mythos: document.getElementById('mythos').value
+            };
+
+            const res = await fetch(`/api/characters/${currentEditingCharId}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify(charData)
+            });
+
+            if (res.ok) {
+                alert("Досье заверено и сохранено!");
+                closeCharacterModal();
+                loadLobby();
+            }
+            else alert("Ошибка сохранения");
+        }
+
+        function enterGame(roomId = null) {
+            if (roomId) currentRoomId = roomId;
+            if (!currentRoomId) return alert("Выберите комнату для входа!");
+
+            showScreen('screen-game');
+            if (!isGameInitialized) {
+                initGame();
+                isGameInitialized = true;
+            } else {
+                if (ws) ws.close();
+                ws = new WebSocket(`ws://127.0.0.1:8000/ws/${currentRoomId}?token=${authToken}`);
+                setupWebSocketHandlers();
+            }
+        }
+
+        function initGame() {
+            const chatInput = document.getElementById('chat-input');
+            const chatMessages = document.getElementById('chat-messages');
+            const gameBoard = document.getElementById('game-board');
+            const mapContainer = document.getElementById('map-container');
+            const clueBoard = document.getElementById('clue-board');
+            const tokenEditor = document.getElementById('token-editor');
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+
+            const tokenElements = {};
+            let draggingTokenId = null;
+            let cameraX = 0, cameraY = 0, cameraRotation = 0;
+            let isPanning = false, startX, startY;
+            let mapScale = 1.0;
+            let editingTokenId = null;
+            let isDrawingMode = false, isDrawing = false, lastX = 0, lastY = 0, currentColor = "#ff0000";
+
+            function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            document.getElementById('draw-toggle').addEventListener('click', (e) => {
+                isDrawingMode = !isDrawingMode;
+                canvas.classList.toggle('active', isDrawingMode);
+                e.target.style.background = isDrawingMode ? "#2C5745" : "transparent";
+                e.target.style.color = isDrawingMode ? "#EBE3A7" : "#EB7D00";
+                e.target.style.borderColor = isDrawingMode ? "#EBE3A7" : "#EB7D00";
+                e.target.textContent = isDrawingMode ? "✏️ Рисуем!" : "✏️ Рисовать";
+                gameBoard.style.cursor = isDrawingMode ? 'default' : 'grab';
+            });
+            document.getElementById('draw-color').addEventListener('input', (e) => { currentColor = e.target.value; });
+
+            function getCanvasCoords(e) { const rect = canvas.getBoundingClientRect(); return { x: e.clientX - rect.left, y: e.clientY - rect.top }; }
+            canvas.addEventListener('mousedown', (e) => { if (!isDrawingMode) return; isDrawing = true; const coords = getCanvasCoords(e); lastX = coords.x; lastY = coords.y; });
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing || !isDrawingMode) return;
+                const coords = getCanvasCoords(e);
+                drawLine(lastX, lastY, coords.x, coords.y, currentColor, 3);
+                if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'draw', x1: lastX, y1: lastY, x2: coords.x, y2: coords.y, color: currentColor, width: 3 }));
+                lastX = coords.x; lastY = coords.y;
+            });
+            window.addEventListener('mouseup', () => { isDrawing = false; });
+            document.getElementById('clear-canvas').addEventListener('click', () => { if (confirm("Очистить всё нарисованное?")) { ctx.clearRect(0, 0, canvas.width, canvas.height); if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'clear_canvas' })); } });
+            function drawLine(x1, y1, x2, y2, color, width) { ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'; ctx.stroke(); ctx.closePath(); }
+
+            if (ws) { ws.close(); }
+            ws = new WebSocket(`ws://127.0.0.1:8000/ws/${currentRoomId}?token=${authToken}`);
+            setupWebSocketHandlers();
+
+            function addChatMessage(text, type = "user", imageUrl = null) {
+                const msgDiv = document.createElement('div');
+                if (type === "system") {
+                    msgDiv.textContent = text;
+                    msgDiv.style.color = "var(--accent)";
+                    msgDiv.style.fontWeight = "bold";
+                    msgDiv.style.backgroundColor = "rgba(235, 125, 0, 0.1)";
+                    msgDiv.style.padding = "6px";
+                    msgDiv.style.borderRadius = "2px";
+                    msgDiv.style.borderLeft = "2px solid var(--accent)";
+                    msgDiv.style.fontFamily = "'Special Elite', monospace";
+                }
+                else { if (text) { const span = document.createElement('span'); span.textContent = "💬 " + text; span.style.color = "var(--paper)"; msgDiv.appendChild(span); } if (imageUrl) { const img = document.createElement('img'); img.src = imageUrl; img.className = 'chat-img'; img.draggable = true; img.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', imageUrl); }); img.addEventListener('click', () => window.open(imageUrl, '_blank')); msgDiv.appendChild(document.createElement('br')); msgDiv.appendChild(img); } }
+                chatMessages.appendChild(msgDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            function sendChatMessage() { const text = chatInput.value.trim(); if (text && ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ type: 'chat', text: text })); chatInput.value = ''; } }
+            document.getElementById('chat-send').addEventListener('click', sendChatMessage);
+            chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendChatMessage(); });
+
+            document.getElementById('attach-btn').addEventListener('click', () => document.getElementById('chat-file-upload').click());
+            document.getElementById('chat-file-upload').addEventListener('change', async function(event) {
+                const file = event.target.files[0]; if (file) { const formData = new FormData(); formData.append("file", file); try { const response = await fetch('/upload', { method: 'POST', body: formData }); const result = await response.json(); if (result.url && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'chat_image', url: result.url })); } catch (error) { console.error(error); } event.target.value = ''; }
+            });
+
+            function addClueToDOM(url) {
+                const clueItem = document.createElement('div'); clueItem.className = 'clue-item'; const img = document.createElement('img'); img.src = url;
+                const delBtn = document.createElement('button'); delBtn.textContent = '✖'; delBtn.style.cssText = 'position:absolute; top:5px; right:5px; background:#d94c4c; color:white; border:none; border-radius:2px; cursor:pointer; font-size:10px;';
+                delBtn.onclick = () => { clueItem.remove(); if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'remove_clue', url: url })); };
+                clueItem.appendChild(img); clueItem.appendChild(delBtn); clueBoard.appendChild(clueItem);
+            }
+
+            clueBoard.addEventListener('dragover', (e) => { e.preventDefault(); clueBoard.style.background = "#f0e8c0"; });
+            clueBoard.addEventListener('dragleave', (e) => { clueBoard.style.background = "var(--paper)"; });
+            clueBoard.addEventListener('drop', (e) => { e.preventDefault(); clueBoard.style.background = "var(--paper)"; const imageUrl = e.dataTransfer.getData('text/plain'); if (imageUrl && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'add_clue', url: imageUrl })); });
+
+            document.getElementById('toggle-clue-board').addEventListener('click', () => { clueBoard.classList.toggle('hidden'); });
+
+            document.getElementById('leave-room-btn').addEventListener('click', () => {
+                if (confirm("Вы уверены, что хотите выйти из комнаты?")) {
+                    if (ws) { ws.close(); ws = null; }
+                    clueBoard.innerHTML = '<h3>📌 Улики</h3>';
+                    chatMessages.innerHTML = '';
+                    Object.values(tokenElements).forEach(el => el.remove());
+                    for (let id in tokenElements) delete tokenElements[id];
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    mapContainer.style.backgroundImage = 'none';
+                    isGameInitialized = false;
+                    showScreen('screen-lobby');
+                }
+            });
+
+            window.createTokenElement = function(id, name, x, y, color, imageUrl, scale) {
+                if (tokenElements[id]) return;
+                const wrapper = document.createElement('div'); wrapper.className = 'token-wrapper'; wrapper.id = id; wrapper.style.left = x + 'px'; wrapper.style.top = y + 'px';
+                const circle = document.createElement('div'); circle.className = 'token-circle'; circle.style.backgroundColor = color || "#d94c4c"; circle.style.transform = `scale(${scale || 1})`; if (imageUrl) circle.style.backgroundImage = `url(${imageUrl})`;
+                const label = document.createElement('div'); label.className = 'token-name'; label.textContent = name;
+                wrapper.appendChild(circle); wrapper.appendChild(label);
+                let isDragging = false; let offsetX, offsetY;
+                wrapper.addEventListener('mousedown', (e) => { if (e.button === 2 || isDrawingMode) return; isDragging = true; draggingTokenId = id; offsetX = e.clientX - wrapper.offsetLeft - cameraX; offsetY = e.clientY - wrapper.offsetTop - cameraY; wrapper.style.zIndex = 10; e.stopPropagation(); });
+                window.addEventListener('mousemove', (e) => { if (!isDragging) return; let newX = e.clientX - offsetX - cameraX; let newY = e.clientY - offsetY - cameraY; wrapper.style.left = newX + 'px'; wrapper.style.top = newY + 'px'; if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'move', id: id, x: newX, y: newY })); });
+                window.addEventListener('mouseup', () => { if (isDragging) { isDragging = false; draggingTokenId = null; wrapper.style.zIndex = 5; } });
+                wrapper.addEventListener('contextmenu', (e) => { e.preventDefault(); openEditor(id, name, color, scale); });
+                gameBoard.appendChild(wrapper); tokenElements[id] = wrapper;
+            };
+
+            window.tokenElements = tokenElements;
+
+            document.getElementById('add-token-btn').addEventListener('click', () => { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'create_token' })); });
+
+            window.openEditor = function(id, name, color, scale) { editingTokenId = id; document.getElementById('edit-name').value = name; document.getElementById('edit-color').value = color || "#d94c4c"; document.getElementById('edit-scale').value = scale || 1; document.getElementById('scale-val').textContent = scale || 1; tokenEditor.classList.add('active'); }
+            window.closeEditor = function() { tokenEditor.classList.remove('active'); editingTokenId = null; };
+            document.getElementById('edit-scale').addEventListener('input', (e) => document.getElementById('scale-val').textContent = e.target.value);
+            document.getElementById('edit-name').addEventListener('change', (e) => { if (editingTokenId) ws.send(JSON.stringify({ type: 'update_token', id: editingTokenId, name: e.target.value })); });
+            document.getElementById('edit-color').addEventListener('input', (e) => { if (editingTokenId) ws.send(JSON.stringify({ type: 'update_token', id: editingTokenId, color: e.target.value, image_url: null })); });
+            document.getElementById('edit-scale').addEventListener('change', (e) => { if (editingTokenId) ws.send(JSON.stringify({ type: 'update_token', id: editingTokenId, scale: parseFloat(e.target.value) })); });
+            document.getElementById('delete-token-btn').addEventListener('click', () => { if (editingTokenId && confirm("Удалить?")) { ws.send(JSON.stringify({ type: 'delete_token', id: editingTokenId })); closeEditor(); } });
+            document.getElementById('token-image-upload').addEventListener('change', async function(event) { const file = event.target.files[0]; if (file && editingTokenId) { const formData = new FormData(); formData.append("file", file); try { const response = await fetch('/upload', { method: 'POST', body: formData }); const result = await response.json(); if (result.url) ws.send(JSON.stringify({ type: 'update_token', id: editingTokenId, image_url: result.url })); } catch (error) { console.error(error); } } });
+
+            gameBoard.addEventListener('mousedown', (e) => { if (e.target.closest('.token-wrapper') || isDrawingMode) return; isPanning = true; startX = e.clientX - cameraX; startY = e.clientY - cameraY; });
+            window.addEventListener('mousemove', (e) => { if (isPanning) { cameraX = e.clientX - startX; cameraY = e.clientY - startY; updateCamera(); } });
+            window.addEventListener('mouseup', () => { isPanning = false; });
+            gameBoard.addEventListener('wheel', (e) => { if (e.shiftKey) { e.preventDefault(); cameraRotation += e.deltaY > 0 ? 5 : -5; updateCamera(); } });
+            window.updateCamera = function() { gameBoard.style.transform = `translate(${cameraX}px, ${cameraY}px) rotate(${cameraRotation}deg)`; canvas.style.transform = `translate(${cameraX}px, ${cameraY}px) rotate(${cameraRotation}deg)`; }
+            window.changeMapScale = function(delta) { mapScale += delta; if (mapScale < 0.5) mapScale = 0.5; if (mapScale > 3.0) mapScale = 3.0; mapContainer.style.transform = `scale(${mapScale})`; };
+
+            const diceModal = document.getElementById('dice-modal'); const diceBtns = document.querySelectorAll('.dice-btn'); const rollBtn = document.getElementById('roll-btn'); const clearDiceBtn = document.getElementById('clear-dice-btn'); let selectedDice = {};
+            document.getElementById('dice-toggle-btn').addEventListener('click', () => diceModal.classList.toggle('active'));
+            diceBtns.forEach(btn => { btn.addEventListener('click', () => { const sides = btn.dataset.sides; selectedDice[sides] = (selectedDice[sides] || 0) + 1; btn.classList.add('selected'); updateRollButton(); }); });
+            clearDiceBtn.addEventListener('click', () => { selectedDice = {}; diceBtns.forEach(btn => btn.classList.remove('selected')); updateRollButton(); });
+            function updateRollButton() { let total = 0, text = "Бросить ("; for (const [sides, count] of Object.entries(selectedDice)) { if (count > 0) { text += `${count}d${sides} `; total += count; } } text += ")"; rollBtn.textContent = total > 0 ? text : "Бросить (0)"; }
+            rollBtn.addEventListener('click', () => { if (!ws || ws.readyState !== WebSocket.OPEN) return; for (const [sides, count] of Object.entries(selectedDice)) { if (count > 0) ws.send(JSON.stringify({ type: 'roll', sides: parseInt(sides), count: count })); } selectedDice = {}; diceBtns.forEach(btn => btn.classList.remove('selected')); updateRollButton(); diceModal.classList.remove('active'); });
+
+            document.getElementById('map-upload').addEventListener('change', async function(event) { const file = event.target.files[0]; if (file) { const formData = new FormData(); formData.append("file", file); try { const response = await fetch('/upload', { method: 'POST', body: formData }); const result = await response.json(); if (result.url && ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'map_change', url: result.url })); } catch (error) { console.error(error); } } });
+        }
+
+        function setupWebSocketHandlers() {
+            const chatMessages = document.getElementById('chat-messages');
+            const gameBoard = document.getElementById('game-board');
+            const mapContainer = document.getElementById('map-container');
+            const clueBoard = document.getElementById('clue-board');
+            const canvas = document.getElementById('drawing-canvas');
+            const ctx = canvas.getContext('2d');
+
+            ws.onopen = () => {
+                const msgDiv = document.createElement('div');
+                msgDiv.textContent = "🟢 Дело открыто. Подключение к комнате " + currentRoomId;
+                msgDiv.style.color = "var(--accent)";
+                msgDiv.style.fontWeight = "bold";
+                msgDiv.style.backgroundColor = "rgba(235, 125, 0, 0.1)";
+                msgDiv.style.padding = "6px";
+                msgDiv.style.borderRadius = "2px";
+                msgDiv.style.borderLeft = "2px solid var(--accent)";
+                msgDiv.style.fontFamily = "'Special Elite', monospace";
+                chatMessages.appendChild(msgDiv);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'init') {
+                        for (const [id, t] of Object.entries(data.tokens)) window.createTokenElement(id, t.name, t.x, t.y, t.color, t.image_url, t.scale);
+                        if (data.map_url) mapContainer.style.backgroundImage = `url(${data.map_url})`;
+                        if (data.clues) data.clues.forEach(url => {
+                            const clueItem = document.createElement('div'); clueItem.className = 'clue-item'; const img = document.createElement('img'); img.src = url;
+                            const delBtn = document.createElement('button'); delBtn.textContent = '✖'; delBtn.style.cssText = 'position:absolute; top:5px; right:5px; background:#d94c4c; color:white; border:none; border-radius:2px; cursor:pointer; font-size:10px;';
+                            delBtn.onclick = () => { clueItem.remove(); if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'remove_clue', url: url })); };
+                            clueItem.appendChild(img); clueItem.appendChild(delBtn); clueBoard.appendChild(clueItem);
+                        });
+                    }
+                    else if (data.type === 'token_created') window.createTokenElement(data.id, data.token.name, data.token.x, data.token.y, data.token.color, data.token.image_url, data.token.scale);
+                    else if (data.type === 'move') { if (window.tokenElements[data.id]) { window.tokenElements[data.id].style.left = data.x + 'px'; window.tokenElements[data.id].style.top = data.y + 'px'; } }
+                    else if (data.type === 'update_token') {
+                        const wrapper = window.tokenElements[data.id];
+                        if (wrapper) {
+                            const circle = wrapper.querySelector('.token-circle'); const label = wrapper.querySelector('.token-name');
+                            if (data.name !== undefined) label.textContent = data.name;
+                            if (data.color !== undefined) { circle.style.backgroundColor = data.color; circle.style.backgroundImage = 'none'; }
+                            if (data.image_url !== undefined) circle.style.backgroundImage = data.image_url ? `url(${data.image_url})` : 'none';
+                            if (data.scale !== undefined) circle.style.transform = `scale(${data.scale})`;
+                        }
+                    }
+                    else if (data.type === 'delete_token') { if (window.tokenElements[data.id]) { window.tokenElements[data.id].remove(); delete window.tokenElements[data.id]; } }
+                    else if (data.type === 'chat') {
+                        const msgDiv = document.createElement('div');
+                        if (data.is_system) { msgDiv.textContent = data.text; msgDiv.style.color = "var(--accent)"; msgDiv.style.fontWeight = "bold"; msgDiv.style.backgroundColor = "rgba(235, 125, 0, 0.1)"; msgDiv.style.padding = "6px"; msgDiv.style.borderRadius = "2px"; msgDiv.style.borderLeft = "2px solid var(--accent)"; msgDiv.style.fontFamily = "'Special Elite', monospace"; }
+                        else { msgDiv.textContent = "💬 " + data.text; msgDiv.style.color = "var(--paper)"; }
+                        chatMessages.appendChild(msgDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                    else if (data.type === 'chat_image') {
+                        const msgDiv = document.createElement('div');
+                        const img = document.createElement('img'); img.src = data.url; img.className = 'chat-img'; img.draggable = true; img.addEventListener('dragstart', (e) => { e.dataTransfer.setData('text/plain', data.url); }); img.addEventListener('click', () => window.open(data.url, '_blank'));
+                        msgDiv.appendChild(img); chatMessages.appendChild(msgDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                    else if (data.type === 'add_clue') {
+                        const clueItem = document.createElement('div'); clueItem.className = 'clue-item'; const img = document.createElement('img'); img.src = data.url;
+                        const delBtn = document.createElement('button'); delBtn.textContent = '✖'; delBtn.style.cssText = 'position:absolute; top:5px; right:5px; background:#d94c4c; color:white; border:none; border-radius:2px; cursor:pointer; font-size:10px;';
+                        delBtn.onclick = () => { clueItem.remove(); if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'remove_clue', url: data.url })); };
+                        clueItem.appendChild(img); clueItem.appendChild(delBtn); clueBoard.appendChild(clueItem);
+                    }
+                    else if (data.type === 'remove_clue') {
+                        const clues = clueBoard.querySelectorAll('.clue-item img');
+                        clues.forEach(img => { if (img.src.endsWith(data.url) || data.url.endsWith(img.getAttribute('src'))) img.parentElement.remove(); });
+                    }
+                    else if (data.type === 'map_change') { mapContainer.style.backgroundImage = `url(${data.url})`;
+                        const msgDiv = document.createElement('div'); msgDiv.textContent = "🗺️ Карта дела обновлена!"; msgDiv.style.color = "var(--accent)"; msgDiv.style.fontWeight = "bold"; msgDiv.style.backgroundColor = "rgba(235, 125, 0, 0.1)"; msgDiv.style.padding = "6px"; msgDiv.style.borderRadius = "2px"; msgDiv.style.borderLeft = "2px solid var(--accent)"; msgDiv.style.fontFamily = "'Special Elite', monospace"; chatMessages.appendChild(msgDiv); chatMessages.scrollTop = chatMessages.scrollHeight;
+                    }
+                    else if (data.type === 'draw') { ctx.beginPath(); ctx.moveTo(data.x1, data.y1); ctx.lineTo(data.x2, data.y2); ctx.strokeStyle = data.color; ctx.lineWidth = data.width; ctx.lineCap = 'round'; ctx.stroke(); ctx.closePath(); }
+                    else if (data.type === 'clear_canvas') ctx.clearRect(0, 0, canvas.width, canvas.height);
+                } catch (e) { console.log(e); }
+            };
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (authToken) loadLobby();
+            else showScreen('screen-auth');
+        });
+    </script>
+</body>
+</html>
