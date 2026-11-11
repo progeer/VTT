@@ -20,7 +20,6 @@ class ConnectionManager:
         self.current_map = None
         self.clues = []
         self.map_scale = 1.0
-
         self.camera_state = {"x": 0, "y": 0, "rotation": 0}
 
     async def connect(self, websocket: WebSocket):
@@ -153,7 +152,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int):
                     await manager.broadcast(data)
                     continue
 
-                # 11. Добавление улики на доску
                 elif msg_type == "add_clue":
                     clue_url = parsed_data.get("url")
                     if clue_url and clue_url not in manager.clues:
@@ -161,7 +159,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int):
                         await manager.broadcast(data)
                     continue
 
-                # 12. Удаление улики с доски
                 elif msg_type == "remove_clue":
                     clue_url = parsed_data.get("url")
                     if clue_url in manager.clues:
@@ -173,7 +170,6 @@ async def websocket_endpoint(websocket: WebSocket, room_id: int):
                     await manager.broadcast(data)
                     continue
 
-                # 14. Обработка стирания (очистки холста)
                 elif msg_type == "clear_canvas":
                     await manager.broadcast(data)
                     continue
